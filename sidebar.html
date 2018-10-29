@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <!-- The CSS package above applies Google styling to buttons and other elements. -->
+
+    <style>
+    .branding-below {
+      bottom: 56px;
+      top: 0;
+    }
+    .branding-text {
+      left: 7px;
+      position: relative;
+      top: 3px;
+    }
+    .col-contain {
+      overflow: hidden;
+    }
+    .col-one {
+      float: left;
+      width: 50%;
+    }
+    .logo {
+      vertical-align: middle;
+    }
+    .radio-spacer {
+      height: 20px;
+    }
+    .width-100 {
+      width: 100%;
+    }
+    .label {
+      padding: 8px;
+    }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar branding-below">
+      <form id='date-format' onsubmit="return mySubmitFunction(event)">
+        <div class="block col-contain">
+            <div>
+                <label for="language">Language</label>
+                <select name="language" >
+                <option value="de">German</option>
+                <option value="ar">Arabic</option>
+                <option value="es">Spanish</option>
+                <option selected value="en">English</option>
+                </select>
+            </div>
+          <div class="col-one">
+            <b>Date</b>
+            <div>
+                <label for="year">day</label>
+                <select name="year" >
+                <option selected value="numeric">numeric</option>
+                <option value="2-digit">2-digit</option>
+                <option value="undefined">None</option>
+                </select>
+            </div>
+            <div>
+                <label for="month">month</label>
+                <select name="month" >
+                <option value="narrow">narrow</option>
+                <option value="short">short</option>
+                <option selected value="long">long</option>
+                <option value="numeric">numeric</option>
+                <option value="2-digit">2-digit</option>
+                <option value="undefined">None</option>
+                </select>
+            </div>
+            <div>
+                <label for="weekday">weekday</label>
+                <select name="weekday" >
+                <option value="narrow">narrow</option>
+                <option value="short">short</option>
+                <option selected value="long">long</option>
+                <option value="undefined">None</option>
+                </select>
+            </div>
+            <div>
+                <label for="day">day</label>
+                <select name="day" >
+                <option selected value="numeric">numeric</option>
+                <option value="2-digit">2-digit</option>
+                <option value="undefined">None</option>
+                </select>
+            </div>
+          </div>
+          <div class="col-two">
+            <b>Date</b>
+            <div>
+                <label for="hour">hour</label>
+                <select name="hour" >
+                <option value="numeric">numeric</option>
+                <option selected value="2-digit">2-digit</option>
+                <option value="undefined">None</option>
+                </select>
+            </div>
+            <div>
+                <label for="minute">minute</label>
+                <select name="minute" >
+                <option value="numeric">numeric</option>
+                <option selected value="2-digit">2-digit</option>
+                <option value="undefined">None</option>
+                </select>
+            </div>
+            <div>
+                <label for="second">second</label>
+                <select name="second" >
+                <option value="numeric">numeric</option>
+                <option selected value="2-digit">2-digit</option>
+                <option value="undefined">None</option>
+                </select>
+            </div>
+          </div>
+        </div>
+        <div class="date-example">
+          <b>Date Example</b>
+          <p id="date-example"></p>
+        </div>
+        
+        <div class="block">
+          <input type="checkbox" id="save-prefs">
+          <label for="save-prefs">Use this format by default</label>
+        </div>
+        <div class="block" id="button-bar">
+          <button class="blue" id="save-settings">Save</button>
+          <button id="insert-date">Insert</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="sidebar bottom">
+      <span class="gray branding-text">Made by Will Renius</span>
+    </div>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script>
+      /**
+       * On document load, assign click handlers to each button and try to load the
+       * user's origin and destination language preferences if previously set.
+       */
+      $(function() {
+        $('#save-settings').click(saveDateFormat);
+        $('#insert-date').click(testDate);
+        $("#date-format").change(testDate);
+        testDate;
+       });
+
+      $(testDate);
+
+      /**
+       * Returns an object from the form values
+       */
+      function objectifyForm(formArray) {
+
+        var returnArray = {};
+        for (var i = 0; i < formArray.length; i++){
+          returnArray[formArray[i]['name']] = formArray[i]['value'];
+        }
+        return returnArray;
+      }
+      //Prevent normal submit
+      function mySubmitFunction(e) {
+        e.preventDefault();
+        return false;
+      }
+      
+      function getDateSettings(){
+        var language =  $('[name=language]').val()
+        var hour12 = true
+        
+        var formObject = objectifyForm($('#date-format').serializeArray());
+        var optionParams = ["weekday","year","month","day","hour","minute","second"]
+        var dateOptions = Object.keys(formObject)
+        .filter(key => optionParams.includes(key))
+        .reduce((obj, key) => {
+          obj[key] = (formObject[key] != "undefined") ? formObject[key] : undefined; 
+          return obj;
+        }, {});
+        
+        return({language:language, hou12:hour12, dateOptions:dateOptions})
+      }
+      /**
+       * Sets params
+       * Dpdates the sidebar UI with the resulting date.
+       */
+      function testDate() {
+        var dateSettings = getDateSettings();
+        console.log(dateSettings);
+        var today  = new Date();
+        var dateString = today.toLocaleString(dateSettings["lanuage"], dateSettings["dateOptions"]);
+        console.log(dateString);
+        $('#date-example').text(dateString)
+      }
+
+      /**
+       * Runs a server-side function to insert the translated text into the document
+       * at the user's cursor or selection.
+       */
+      function saveDateFormat() {
+        var dateSettings = getDateSettings();
+        google.script.run.updateDateSettings(dateSettings);
+      }
+
+      /**
+       * Inserts a div that contains an error message after a given element.
+       *
+       * @param {string} msg The error message to display.
+       * @param {DOMElement} element The element after which to display the error.
+       */
+      function showError(msg, element) {
+        var div = $('<div id="error" class="error">' + msg + '</div>');
+        $(element).after(div);
+      }
+    </script>
+  </body>
+</html>
