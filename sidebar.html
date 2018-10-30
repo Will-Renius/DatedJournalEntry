@@ -38,93 +38,26 @@
   </head>
   <body>
     <div class="sidebar branding-below">
+      <div class = block>
+        <button class = "date-format-default">yyyy-MM-dd HH:mm:ss</button>
+        <button class = "date-format-default">E, M dd, yyyy</button>
+      </div>
       <form id='date-format' onsubmit="return mySubmitFunction(event)">
-        <div class="block col-contain">
-            <div>
-                <label for="language">Language</label>
-                <select name="language" >
-                <option value="de">German</option>
-                <option value="ar">Arabic</option>
-                <option value="es">Spanish</option>
-                <option selected value="en">English</option>
-                </select>
-            </div>
-          <div class="col-one">
-            <b>Date</b>
-            <div>
-                <label for="year">day</label>
-                <select name="year" >
-                <option selected value="numeric">numeric</option>
-                <option value="2-digit">2-digit</option>
-                <option value="undefined">None</option>
-                </select>
-            </div>
-            <div>
-                <label for="month">month</label>
-                <select name="month" >
-                <option value="narrow">narrow</option>
-                <option value="short">short</option>
-                <option selected value="long">long</option>
-                <option value="numeric">numeric</option>
-                <option value="2-digit">2-digit</option>
-                <option value="undefined">None</option>
-                </select>
-            </div>
-            <div>
-                <label for="weekday">weekday</label>
-                <select name="weekday" >
-                <option value="narrow">narrow</option>
-                <option value="short">short</option>
-                <option selected value="long">long</option>
-                <option value="undefined">None</option>
-                </select>
-            </div>
-            <div>
-                <label for="day">day</label>
-                <select name="day" >
-                <option selected value="numeric">numeric</option>
-                <option value="2-digit">2-digit</option>
-                <option value="undefined">None</option>
-                </select>
-            </div>
-          </div>
-          <div class="col-two">
-            <b>Date</b>
-            <div>
-                <label for="hour">hour</label>
-                <select name="hour" >
-                <option value="numeric">numeric</option>
-                <option selected value="2-digit">2-digit</option>
-                <option value="undefined">None</option>
-                </select>
-            </div>
-            <div>
-                <label for="minute">minute</label>
-                <select name="minute" >
-                <option value="numeric">numeric</option>
-                <option selected value="2-digit">2-digit</option>
-                <option value="undefined">None</option>
-                </select>
-            </div>
-            <div>
-                <label for="second">second</label>
-                <select name="second" >
-                <option value="numeric">numeric</option>
-                <option selected value="2-digit">2-digit</option>
-                <option value="undefined">None</option>
-                </select>
-            </div>
-          </div>
+       
+        <div class="block">
+            <label for="timezone">Time Zone</label>
+            <input type="text" id="timezone" name="timezone" value="GMT"><br>
+            
+        </div>
+        <div class="block">
+          <label for="date-format">Date Format</label>
+          <input type="text" id="date-format" name="date-format" value="yyyy-MM-dd'T'HH:mm:ss'Z'"><br>
         </div>
         <div class="date-example">
           <b>Date Example</b>
           <p id="date-example"></p>
         </div>
         
-        <div class="block">
-          <input type="checkbox" id="save-prefs">
-          <label for="save-prefs">Use this format by default</label>
-        </div>
         <div class="block" id="button-bar">
           <button class="blue" id="save-settings">Save</button>
           <button id="insert-date">Insert</button>
@@ -139,70 +72,133 @@
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <script>
       /**
-       * On document load, assign click handlers to each button and try to load the
-       * user's origin and destination language preferences if previously set.
+       * 
+       * 
        */
       $(function() {
         $('#save-settings').click(saveDateFormat);
-        $('#insert-date').click(testDate);
+        $('#insert-date').click(insertDate);
         $("#date-format").change(testDate);
-        testDate;
+        $(".date-format-default").click(changeDateFormat);
+        google.script.run.withSuccessHandler(loadPreferences)
+            .withFailureHandler(showError).getDateSettings();
        });
 
       $(testDate);
 
-      /**
-       * Returns an object from the form values
-       */
-      function objectifyForm(formArray) {
-
-        var returnArray = {};
-        for (var i = 0; i < formArray.length; i++){
-          returnArray[formArray[i]['name']] = formArray[i]['value'];
-        }
-        return returnArray;
-      }
+     
       //Prevent normal submit
       function mySubmitFunction(e) {
+        console.log("mySubmitFunction()");
         e.preventDefault();
         return false;
       }
       
+      function changeDateFormat(){
+        dateString = $( this ).text()
+        console.log(dateString);
+        console.log(typeof dateString);
+        $("[name=date-format]").val(dateString);
+        testDate();
+      }
+      
       function getDateSettings(){
-        var language =  $('[name=language]').val()
-        var hour12 = true
-        
-        var formObject = objectifyForm($('#date-format').serializeArray());
-        var optionParams = ["weekday","year","month","day","hour","minute","second"]
-        var dateOptions = Object.keys(formObject)
-        .filter(key => optionParams.includes(key))
-        .reduce((obj, key) => {
-          obj[key] = (formObject[key] != "undefined") ? formObject[key] : undefined; 
-          return obj;
-        }, {});
-        
-        return({language:language, hou12:hour12, dateOptions:dateOptions})
+        console.log("getDateSettings()");
+        var timeZone =  $('[name=timezone]').val();
+        var dateFormat = $('[name=date-format]').val();
+        return({timeZone:timeZone, formatString:dateFormat})
       }
       /**
-       * Sets params
-       * Dpdates the sidebar UI with the resulting date.
+       * 
+       * Get current saved preferences
        */
-      function testDate() {
-        var dateSettings = getDateSettings();
-        console.log(dateSettings);
-        var today  = new Date();
-        var dateString = today.toLocaleString(dateSettings["lanuage"], dateSettings["dateOptions"]);
-        console.log(dateString);
-        $('#date-example').text(dateString)
+      function loadPreferences(dateSettings) {
+        $('[name="timezone"]').val(dateSettings.timeZone);
+        $('[name="date-format"]').val(dateSettings.dateFormat);            
       }
 
       /**
-       * Runs a server-side function to insert the translated text into the document
-       * at the user's cursor or selection.
+       * 
+       * Updates the sidebar UI with the resulting date.
+       */
+      function testDate() {
+      console.log("testDate()");
+        $('#error').remove();
+        var dateSettings = getDateSettings();
+        console.log(dateSettings);
+        google.script.run
+          .withSuccessHandler(
+            function(dateString) {
+            console.log(dateString);
+            $('#date-example').text(dateString)
+            })
+          .withFailureHandler(
+              function(msg, element) {
+                showError(msg, $('#button-bar'));
+                element.disabled = false;
+              })
+          .getDateString(dateSettings);
+        
+      }
+      
+      /**
+       * 
+       * 
+       */
+      function insertDate() {
+        console.log("insertDate()");
+        var dateSettings = getDateSettings();
+        console.log(dateSettings);
+        google.script.run
+          .withSuccessHandler(
+            function(dateString) {
+            console.log(dateString);
+            $('#date-example').text(dateString)
+            })
+          .withFailureHandler(
+              function(msg, element) {
+                showError(msg, $('#button-bar'));
+              })
+          .getDateString(dateSettings);
+        console.log(dateString);
+        $('#date-example').text(dateString)
+      }
+      
+      /**
+       * 
+       * 
+       */
+      function insertDateString(dateString){
+      console.log(dateString);
+      google.script.run
+        .withSuccessHandler(
+            function() {
+            console.log("success");
+            })
+          .withFailureHandler(
+              function(msg, element) {
+                showError(msg, $('#button-bar'));
+              })
+          .insertDate(dateString);
+      }
+      /**
+       * 
+       * 
        */
       function saveDateFormat() {
+        console.log("saveDateFormat()");
         var dateSettings = getDateSettings();
-        google.script.run.updateDateSettings(dateSettings);
+        google.script.run
+        .withSuccessHandler(
+          function() {
+           testDate();
+          })
+        .withFailureHandler(
+          function(msg, element) {
+          showError(msg, $('#button-bar'));
+          element.disabled = false;
+          })
+        .updateDateSettings(dateSettings);
       }
 
       /**
