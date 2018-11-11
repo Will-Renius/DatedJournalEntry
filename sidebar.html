@@ -34,33 +34,54 @@
     .label {
       padding: 8px;
     }
+    .date-presets{
+      margin: 10px 0;
+     }
+     .help-link{
+     font-size: .7em;
+     }
+     .advanced{
+     margin: 10px auto;
+     }
     </style>
   </head>
   <body>
     <div class="sidebar branding-below">
-      <div class = block>
-        <button class = "date-format-default">yyyy-MM-dd HH:mm:ss</button>
-        <button class = "date-format-default">E, M dd, yyyy</button>
+      <div class = "block date-presets" >
+      <label for="date-preset">Date Presets</label>
+      <select name="date-preset" id="preset-dropdown">
+        <option disabled selected value> -- select an option -- </option>
+        <option value="yyyy-MM-dd HH:mm:ss">1996-01-05 13:01:01</option>
+        <option value="MMM dd, yyyy h:mm a">Jan 05, 1996 1:01 PM</option>
+        <option value="MM/dd/yyyy">01/05/1996</option>
+        <option value="EEEE, MMMM dd, yyyy">Wednesday, January 05, 1996</option>
+      </select>
       </div>
       <form id='date-format' onsubmit="return mySubmitFunction(event)">
-       
-        <div class="block">
-            <label for="timezone">Time Zone</label>
-            <input type="text" id="timezone" name="timezone" value="GMT"><br>
-            
-        </div>
-        <div class="block">
-          <label for="date-format">Date Format</label>
-          <input type="text" id="date-format" name="date-format" value="yyyy-MM-dd'T'HH:mm:ss'Z'"><br>
-        </div>
+          
+          <button class='advanced'>Advanced Options</button>
+          
+          <div id='advancedOptions'>
+            <div class="block">
+                <label for="timezone">Time Zone</label>
+                <input type="text" id="timezone" name="timezone" value=""><br>
+                
+            </div>
+            <div class="block">
+              <label for="date-format">Date Format</label>
+              <input type="text" id="date-format" name="date-format" value=""><br>
+            </div>
+            <a href="https://github.com/Will-Renius/DatedJournalEntry" class = "help-link">Click Here For Help Formatting Dates</a>
+
+          </div>
+          
         <div class="date-example">
-          <b>Date Example</b>
+          <h3>Preview</h3>
           <p id="date-example"></p>
         </div>
         
         <div class="block" id="button-bar">
           <button class="blue" id="save-settings">Save</button>
-          <button id="insert-date">Insert</button>
         </div>
       </form>
     </div>
@@ -73,37 +94,50 @@
     <script>
       /**
        * 
-       * 
+       * Set functions to enable on document load
        */
       $(function() {
         $('#save-settings').click(saveDateFormat);
         $('#insert-date').click(insertDate);
         $("#date-format").change(testDate);
-        $(".date-format-default").click(changeDateFormat);
+        $("#preset-dropdown").change(changeDateFormat);
         google.script.run.withSuccessHandler(loadPreferences)
             .withFailureHandler(showError).getDateSettings();
+            
+        
+        $('#advancedOptions').hide();
+        $('.advanced').click(function() {
+            if ($('#advancedOptions').is(':hidden')) {
+                 $('#advancedOptions').slideDown();
+            } else {
+                 $('#advancedOptions').slideUp();
+            }
+        });
        });
 
-      $(testDate);
-
      
-      //Prevent normal submit
+      /**
+       * 
+       * prevent default behavior
+       */
       function mySubmitFunction(e) {
-        console.log("mySubmitFunction()");
         e.preventDefault();
         return false;
       }
-      
+      /**
+       * 
+       * update the date format from a date preset value
+       */
       function changeDateFormat(){
-        dateString = $( this ).text()
-        console.log(dateString);
-        console.log(typeof dateString);
+        dateString = $("#preset-dropdown").val()
         $("[name=date-format]").val(dateString);
         testDate();
       }
-      
+      /**
+       * 
+       * Get current date form values
+       */
       function getDateSettings(){
-        console.log("getDateSettings()");
         var timeZone =  $('[name=timezone]').val();
         var dateFormat = $('[name=date-format]').val();
         return({timeZone:timeZone, formatString:dateFormat})
@@ -114,7 +148,8 @@
        */
       function loadPreferences(dateSettings) {
         $('[name="timezone"]').val(dateSettings.timeZone);
-        $('[name="date-format"]').val(dateSettings.dateFormat);            
+        $('[name="date-format"]').val(dateSettings.formatString);
+        testDate()
       }
 
       /**
@@ -122,10 +157,8 @@
        * Updates the sidebar UI with the resulting date.
        */
       function testDate() {
-      console.log("testDate()");
         $('#error').remove();
         var dateSettings = getDateSettings();
-        console.log(dateSettings);
         google.script.run
           .withSuccessHandler(
             function(dateString) {
@@ -142,38 +175,31 @@
       }
       
       /**
-       * 
+       * Insert the current date form settings
        * 
        */
       function insertDate() {
-        console.log("insertDate()");
         var dateSettings = getDateSettings();
-        console.log(dateSettings);
         google.script.run
           .withSuccessHandler(
             function(dateString) {
-            console.log(dateString);
-            $('#date-example').text(dateString)
+            google.script.run.insertDate(dateString);
             })
           .withFailureHandler(
               function(msg, element) {
                 showError(msg, $('#button-bar'));
               })
           .getDateString(dateSettings);
-        console.log(dateString);
-        $('#date-example').text(dateString)
       }
       
       /**
        * 
-       * 
+       * Insert a new date into the document
        */
       function insertDateString(dateString){
-      console.log(dateString);
       google.script.run
         .withSuccessHandler(
             function() {
-            console.log("success");
             })
           .withFailureHandler(
               function(msg, element) {
@@ -183,15 +209,13 @@
       }
       /**
        * 
-       * 
+       * Save date form values as user preferences
        */
       function saveDateFormat() {
-        console.log("saveDateFormat()");
         var dateSettings = getDateSettings();
         google.script.run
         .withSuccessHandler(
           function() {
-           testDate();
           })
         .withFailureHandler(
           function(msg, element) {
