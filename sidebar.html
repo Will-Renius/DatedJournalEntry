@@ -36,18 +36,24 @@
     }
     .date-presets{
       margin: 10px 0;
-     }
-     .help-link{
+    }
+    .help-link{
      font-size: .7em;
-     }
-     .advanced{
+    }
+    .advanced{
      margin: 10px auto;
-     }
+    }
+    .heading-select{
+      margin: 10px 0;
+    }
+    .success{
+      color: green;
+    }
     </style>
   </head>
   <body>
     <div class="sidebar branding-below">
-      <div class = "block date-presets" >
+      <div class = "block date-presets form-group" >
       <label for="date-preset">Date Presets</label>
       <select name="date-preset" id="preset-dropdown">
         <option disabled selected value> -- select an option -- </option>
@@ -61,13 +67,26 @@
           
           <button class='advanced'>Advanced Options</button>
           
-          <div id='advancedOptions'>
-            <div class="block">
+          <div id='advancedOptions'class="block form-group">
+            <div class = "heading-select">
+              <label for="heading-style-preset">Heading Style</label>
+              <select name="heading-style-preset" id="heading-style-dropdown">
+                <option disabled selected value> -- select an option -- </option>
+                <option value="HEADING1">Heading 1</option>
+                <option value="HEADING2">Heading 2</option>
+                <option value="HEADING3">Heading 3</option>
+                <option value="HEADING4">Heading 4</option>
+                <option value="HEADING5">Heading 5</option>
+                <option value="HEADING6">Heading 6</option>
+                <option value="NORMAL">Normal</option>
+              </select>
+            </div>
+            <div>
                 <label for="timezone">Time Zone</label>
                 <input type="text" id="timezone" name="timezone" value=""><br>
                 
             </div>
-            <div class="block">
+            <div>
               <label for="date-format">Date Format</label>
               <input type="text" id="date-format" name="date-format" value=""><br>
             </div>
@@ -126,7 +145,7 @@
       }
       /**
        * 
-       * update the date format from a date preset value
+       * the date format from a date preset value
        */
       function changeDateFormat(){
         dateString = $("#preset-dropdown").val()
@@ -140,7 +159,8 @@
       function getDateSettings(){
         var timeZone =  $('[name=timezone]').val();
         var dateFormat = $('[name=date-format]').val();
-        return({timeZone:timeZone, formatString:dateFormat})
+        var dateHeading = $('#heading-style-dropdown').val();
+        return({timeZone:timeZone, formatString:dateFormat, dateHeading:dateHeading})
       }
       /**
        * 
@@ -149,6 +169,7 @@
       function loadPreferences(dateSettings) {
         $('[name="timezone"]').val(dateSettings.timeZone);
         $('[name="date-format"]').val(dateSettings.formatString);
+        $('#heading-style-dropdown').val(dateSettings.dateHeading);
         testDate()
       }
 
@@ -158,11 +179,11 @@
        */
       function testDate() {
         $('#error').remove();
+        $('#success').remove();
         var dateSettings = getDateSettings();
         google.script.run
           .withSuccessHandler(
             function(dateString) {
-            console.log(dateString);
             $('#date-example').text(dateString)
             })
           .withFailureHandler(
@@ -215,7 +236,9 @@
         var dateSettings = getDateSettings();
         google.script.run
         .withSuccessHandler(
-          function() {
+          function(msg, element) {
+          showSuccess("Successfully Saved", $('#button-bar'));
+          element.disabled = false;
           })
         .withFailureHandler(
           function(msg, element) {
@@ -224,7 +247,10 @@
           })
         .updateDateSettings(dateSettings);
       }
-
+      function showSuccess(msg, element) {
+        var div = $('<div id="success" class="success">' + msg + '</div>');
+        $(element).before(div);
+       }
       /**
        * Inserts a div that contains an error message after a given element.
        *
@@ -233,7 +259,7 @@
        */
       function showError(msg, element) {
         var div = $('<div id="error" class="error">' + msg + '</div>');
-        $(element).after(div);
+        $(element).before(div);
       }
     </script>
   </body>
